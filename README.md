@@ -159,8 +159,8 @@ If you use this code or data, please cite:
 @misc{jack2026fidelity,
   title  = {Translation Fidelity Atlas: A multi-family,
             multi-domain back-translation benchmark},
-  author = {Jack, Daniel},
+  author = {Jackson, Daniel},
   year   = {2026},
-  url    = {https://github.com/danjackdev/translation-fidelity-atlas}
+  url    = {https://github.com/danjack0/translation-fidelity-atlas}
 }
 ```
