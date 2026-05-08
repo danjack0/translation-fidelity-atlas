@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Large local artifacts that should NOT be committed.
+# (Note: data/translation_cache.json.gz IS committed — it is the
+# reproducibility seed. The uncompressed form is generated locally
+# and ignored here.)
+data/translation_cache.json
+data/results/**/*.partial.csv
+
+# Local model caches
+.cache/
+.huggingface/
+
+# OS
+Thumbs.db

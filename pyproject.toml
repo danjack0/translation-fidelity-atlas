@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "translation-fidelity-atlas"
+version = "0.1.0"
+description = "Multi-system, multi-family, multi-domain back-translation fidelity benchmark."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{ name = "Daniel Jack" }]
+keywords = [
+    "machine-translation",
+    "back-translation",
+    "computational-linguistics",
+    "nlp-evaluation",
+    "nllb",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+dependencies = [
+    "deep-translator>=1.11",
+    "matplotlib>=3.7",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "sacrebleu>=2.4",
+    "scikit-learn>=1.3",
+    "scipy>=1.11",
+    "seaborn>=0.13",
+    "sentence-transformers>=2.6",
+    "spacy>=3.7",
+]
+
+[project.optional-dependencies]
+nllb = [
+    "torch>=2.1",
+    "transformers>=4.40",
+    "sentencepiece>=0.2",
+]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.4",
+    "mypy>=1.8",
+]
+
+[project.urls]
+Repository = "https://github.com/danjackdev/translation-fidelity-atlas"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"translation_fidelity_atlas" = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM"]
+ignore = ["E501"]  # we prefer the formatter to handle long lines
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
