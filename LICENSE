@@ -19,3 +19,50 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+SCOPE OF THIS LICENSE
+
+The MIT license above covers the source code and documentation of this
+repository only: src/, scripts/, docs/, tests/, and the project configuration
+files (pyproject.toml, requirements.txt).
+
+The data/ directory is not uniform. The following terms apply.
+
+1. data/corpora/ and data/results/ -- MIT.
+
+   The 600 source sentences in data/corpora/ are author-created original
+   text. The CSVs in data/results/ contain derived metric values (BLEU, TER,
+   cosine and embedding scores) computed from those sentences. Both are the
+   author's own work and both are covered by the MIT license above.
+
+2. data/translation_cache.json.gz -- NOT MIT.
+
+   This file is machine-translation output rather than author-created work,
+   and is not the author's to relicense. It holds 141,088 unique cached
+   translations:
+
+   * 69,962 entries produced by Google Translate. Use of this output is
+     subject to Google's Terms of Service.
+
+   * 71,126 entries produced by NLLB-200
+     (facebook/nllb-200-distilled-600M). NLLB-200 is released under
+     CC-BY-NC 4.0, which permits non-commercial research use only. Output
+     generated with the model carries that restriction.
+
+   The file is committed solely for reproducibility: it lets anyone verify
+   the published results without re-issuing 162,000 translation operations
+   against either system. It is not offered as a redistributable translation
+   dataset.
+
+COMMERCIAL USE
+
+The code, corpora and results are available for commercial use under the MIT
+license above. The translation cache is not. To use this project
+commercially, delete data/translation_cache.json.gz and regenerate it under
+your own licensed access to a translation system, using the runners in
+scripts/ -- see "Reproducing the experiments" in README.md. The regenerated
+cache is then yours under whatever terms that access grants you.
+
+See the "License" section of README.md for the same breakdown in prose.

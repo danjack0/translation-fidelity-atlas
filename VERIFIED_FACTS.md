@@ -19,21 +19,41 @@ artifacts · **STALE** = was true pre-NLLB, false now · **INCOMPLETE** =
 true but materially omits something · **UNVERIFIED** = cannot be checked
 read-only.
 
+> **Reading this document after the fact.** Findings are preserved as written at
+> `7d20fa2`, each annotated with a **RESOLVED / FIXED** note where the repo has
+> since changed. Two consequences for the reader:
+>
+> * **Every `line NN` reference points at the README as it stood at `7d20fa2`.**
+>   That README has since been rewritten from a Google-only project page into a
+>   two-system study, so the ~21 line numbers cited below **will not match** the
+>   current file. They are historical coordinates, not navigation.
+> * The helper scripts cited as `_audit_cache.py` / `_audit_stats.py` were
+>   untracked at audit time. Equivalents are now committed as
+>   `scripts/audit_cache.py` and `scripts/audit_stats.py`.
+> * The **Method** note above ("Figures were not regenerated") describes the
+>   audit itself and remains true of it. The figures **have** since been
+>   regenerated in the course of resolving §8; no statistic in this document was
+>   recomputed as a result, and none changed.
+>
+> **Current standing: every finding in this audit is resolved except two lines
+> of package metadata in `pyproject.toml` (§9), plus items that were always
+> UNVERIFIED by nature (Appendix C).**
+
 ---
 
 ## Executive summary
 
 | # | Area | Verdict |
 |---|---|---|
-| 1 | Cache size (`54,025` / `54k` / `3 MB`) | **WRONG** — 141,088 entries, 8.09 MB |
+| 1 | Cache size (`54,025` / `54k` / `3 MB`) | **WRONG** — 141,088 entries, 8.09 MB. **→ FIXED** in README, `data/README.md` and `docs/methodology.md` |
 | 2 | Row counts / 270 cells | **OK** |
 | 3 | NLLB coverage = 45/8/6 | **OK** — full parity, not a subset |
-| 4 | Chain + round-trip scope | **OK**, but README **INCOMPLETE** — Google *and* NLLB ran all three protocols; README documents only `results/google/` |
-| 5 | "141,088 translations" | **Defensible with wording care** — it is exactly `len(cache)`; it is *not* the number of translation operations (162,000). No API counter exists in the code. |
+| 4 | Chain + round-trip scope | **OK**, but README **INCOMPLETE** — Google *and* NLLB ran all three protocols; README documented only `results/google/`. **→ FIXED**: README now documents both backends and all three protocols |
+| 5 | "141,088 translations" | **Defensible with wording care** — it is exactly `len(cache)`; it is *not* the number of translation operations (162,000). No API counter exists in the code. **→ APPLIED**: all three docs now say "unique cached translations" and give 162,000 separately |
 | 6 | Google headline statistics | **OK** — all 9 TL;DR numbers reproduce |
 | 7 | Google vs NLLB agreement | **Family finding holds. Domain finding REVERSES.** See §7 |
-| 8 | Figures | 43 PNGs; **STALE/INCOMPLETE** docs — 3 protocols' figures are Google-only despite NLLB data existing |
-| 9 | Clone URL vs BibTeX URL | **WRONG — still mismatched.** `danjackdev` vs `danjack0` |
+| 8 | Figures | *At audit:* 43 PNGs; **STALE/INCOMPLETE** — chain and round-trip figures Google-only despite NLLB data existing. **→ FULLY RESOLVED:** 52 PNGs, 21/21 per-backend parity, scatter split per system, `figures/README.md` rebuilt. See §8 |
+| 9 | Clone URL vs BibTeX URL | **WRONG — mismatched** `danjackdev` vs `danjack0`. **→ FIXED in README** (both now `danjack0`). **STILL OPEN elsewhere:** `pyproject.toml:57` keeps the `danjackdev` URL, and `pyproject.toml:12` names the author "Daniel Jack" against "Daniel Jackson" in LICENSE and BibTeX. See §9 |
 
 The single most consequential finding is **§7**: the README's form-versus-meaning
 narrative — which it calls "the most interesting result" — is a Google-only
@@ -115,6 +135,15 @@ Same stale number also appears in `data/README.md:93` ("Entries: 54,025 (Google
 run only)", "~3.1 MB gzipped") and `docs/methodology.md:150` ("3 MB gzipped, 54k
 entries"). Both **WRONG** by the same measurement.
 
+> **RESOLVED — all three files corrected.** `README.md`, `data/README.md` and
+> `docs/methodology.md` now each state **141,088 unique cached translations,
+> 8.09 MB gzipped**, split 69,962 Google / 71,126 NLLB with zero overlap, and
+> each words it as `len(cache)` rather than a count of operations, per §5. Two
+> further errors were found and fixed while correcting `data/README.md`: it also
+> claimed "~8.0 MB raw" (the uncompressed size is **~20.5 MB**) and listed the
+> corpora at 99 sentences each (**100** each, 600 total — `wc -l` undercounts
+> because there is no trailing newline).
+
 ---
 
 ## 2. Row counts and scored cells
@@ -131,6 +160,11 @@ for f in ['data/results/google/back_translation_long.csv','data/results/nllb/bac
 | `google/back_translation_long.csv` | "270 rows total" (line 117) | **270** | **OK** |
 | `nllb/back_translation_long.csv` | *(not mentioned)* | **270** | **INCOMPLETE** |
 | `combined_long.csv` | *(not mentioned)* | **540** | **INCOMPLETE** |
+
+> **RESOLVED.** Both files are now documented. The README's "What's in `data/`"
+> table lists `results/nllb/` in full and `results/combined_long.csv` (540 rows),
+> and `data/README.md` documents every file under both backends with verified
+> row counts.
 
 **Total scored (translator × language × domain) cells: 540.**
 = 2 translators × 45 languages × 6 domains. Verified exactly: 45 × 6 = 270 per
@@ -241,6 +275,12 @@ section likewise shows all three protocols for Google (lines 92-97) but only
 `run_back_translation.py` for NLLB (line 106) — understating what was actually
 run, since `nllb/telephone_chain.csv` and `nllb/round_trip.csv` both exist.
 
+> **RESOLVED.** The README's repo-layout tree and "What's in `data/`" table now
+> show `results/google/` and `results/nllb/` side by side — including the
+> `telephone_chain.csv` and `round_trip.csv` rows for both — plus
+> `combined_long.csv`. "Reproducing the experiments" shows all three runners for
+> both backends, noting each takes `--translator {google,nllb}`.
+
 ---
 
 ## 5. Total translations, and whether "141,088" is defensible
@@ -312,7 +352,9 @@ round-trip. Sum × 2 backends = 162,000.
 across all six backend × protocol combinations. The committed cache fully covers
 every protocol for both backends — re-running any experiment as committed costs
 **0** API calls. This is *stronger* than the README's claim (line 85-88) that the
-cache covers only the Google run. The "~0.3 s each" cache-miss cost is
+cache covers only the Google run. **(RESOLVED — the README, `data/README.md`
+and `docs/methodology.md` now all state that the cache covers all three
+protocols for both systems with zero replay misses.)** The "~0.3 s each" cache-miss cost is
 **UNVERIFIED** (would require live API calls).
 
 ---
@@ -401,10 +443,19 @@ Best/worst gap: Google **23.37** (germanic − east_asian); NLLB **23.48**
 | 2nd worst | `zh-CN` idiomatic 42.05 | `hr` technical 14.08 |
 | 3rd worst | `th` emotional 43.91 | `th` legal 16.13 |
 
-> `hr` (Croatian) legal at **BLEU 7.19** under NLLB is a >5× drop from Google's
-> Croatian legal score and a 28-point outlier below NLLB's own next-worst cell.
-> Flagged as a possible data-quality issue worth a look; this audit does not
-> diagnose it.
+> `hr` (Croatian) legal at **BLEU 7.19** under NLLB is the lowest cell in
+> either backend. Three comparisons, each against its correct referent:
+>
+> - **6.89 points** below NLLB's next-worst *cell* (`hr` technical, **14.08**).
+> - **28.24 points** below NLLB's legal-*domain mean* (**35.43**) — this is
+>   where the "28-point" figure comes from; it is a gap to a domain mean, not
+>   to a neighbouring cell.
+> - An **8.65× drop** from Google's own Croatian legal score (**62.21** → 7.19).
+>
+> The domain-mean gap is the one that makes the cell conspicuous: sitting 28
+> points below the mean of its own domain is far more unusual than sitting 6.89
+> points below the next cell up. Flagged as a possible data-quality issue worth
+> a look; this audit does not diagnose it.
 
 ### 6g. README TL;DR spot-checks (Google) — all reproduce
 
@@ -526,6 +577,17 @@ form/meaning gap than the one the README chose.
 Under NLLB the claim fails differently: worst-two BLEU are legal and technical;
 worst-two cosine are technical and cultural.
 
+> **RESOLVED — the claim is gone from both places it appeared.** The README's
+> form/meaning section now uses emotional-under-Google (worst BLEU 59.92, best
+> cosine 0.9887) as the illustration and states explicitly that idiomatic is
+> second-worst on Google's cosine but **third-best on Google's BLEU**, so it does
+> not fail in form. `docs/findings.md §3` carried the same false sentence
+> ("Idiomatic and cultural are at the bottom of both rankings — the only domains
+> that fail in form *and* meaning") and now carries the corrected version. A
+> separate numeric error was found in that file while checking it: its metric
+> correlation matrix gave TER ~ Embedding as **−0.561**; the recomputed value is
+> **−0.766**, now fixed.
+
 ### 7e. Where the two backends do *not* disagree: absolute level
 
 NLLB scores **uniformly lower** — every one of the 8 families and all 6 domains
@@ -562,6 +624,19 @@ README does not anticipate.
 
 ## 8. Figures
 
+> **Post-audit status: §8 is fully resolved.** The figure-coverage gap
+> documented in this section has since been closed, the figures were
+> regenerated, and `figures/README.md` was rebuilt. Every original finding is
+> retained below as the state at `7d20fa2`, each followed by a **RESOLVED** note
+> recording what was done. One arithmetic slip in the audit's own category table
+> is corrected in §8a. The only item here still carrying a non-OK verdict is the
+> "~30 seconds" runtime estimate, which remains **UNVERIFIED** because the
+> regeneration was never timed — see Appendix C.
+
+### 8a. Inventory
+
+**At audit time:**
+
 ```bash
 ls figures/*.png | wc -l          # 43
 ls figures/ | grep -v '\.png$'    # README.md
@@ -574,6 +649,36 @@ ls figures/ | grep -v '\.png$'    # README.md
 | **Google-only** | **20** | 15 name-suffixed (`bar_family_{cosine,bleu,ter}_google`, `boxplot_{cosine,bleu,ter}_google`, `corr_matrix_google`, `radar_google`, `heatmap_google_{8 families}`) + `roundtrip_google` + **`asymmetry_heatmap`** + **`chain_degradation_{cosine,bleu,ter}`** |
 | **NLLB-only** | **16** | `bar_family_{cosine,bleu,ter}_nllb`, `boxplot_{cosine,bleu,ter}_nllb`, `corr_matrix_nllb`, `radar_nllb`, `heatmap_nllb_{8 families}` |
 | **Genuinely combined** | **7** | `bar_domain_{cosine,bleu,ter}` (grouped Google+Nllb bars), `scatter_{cosine_vs_bleu,cosine_vs_ter,bleu_vs_ter}` (pooled n=540) |
+
+> **Correction to the table above (audit arithmetic, not a change in the
+> artifacts).** The Google-only row enumerates **16** name-suffixed files
+> (3 + 3 + 1 + 1 + 8), not 15, so Google-only was **21**, and "genuinely
+> combined" was the 6 files listed, not 7. The two errors cancelled, which is
+> why the total of 43 was still right. Verified against the tracked file list:
+>
+> ```bash
+> git ls-files figures | grep -c '_google.*\.png'   # 17  (16 + roundtrip_google)
+> git ls-files figures | grep -c '_nllb.*\.png'     # 16
+> # unsuffixed: asymmetry_heatmap + chain_degradation×3 + bar_domain×3 + scatter×3 = 10
+> # → 17 + 3 + 1 = 21 Google-only · 16 NLLB-only · 6 combined = 43
+> ```
+
+**RESOLVED — current inventory: 52 PNGs** (+ `figures/README.md`; 53 directory
+entries). Per-backend coverage is now exactly symmetric, 21 / 21:
+
+| Category | At audit | Now | What moved |
+|---|---|---|---|
+| **Google-only** | 21 | **21** | `asymmetry_heatmap` and `chain_degradation_{cosine,bleu,ter}` left this category (they became two-system); `asymmetry_heatmap_google` and `chain_degradation_{cosine,bleu,ter}_google` were added in their place |
+| **NLLB-only** | 16 | **21** | **+5**: `roundtrip_nllb`, `chain_degradation_{cosine,bleu,ter}_nllb`, `asymmetry_heatmap_nllb` |
+| **Genuinely two-system** | 6 | **10** | **+4**: `chain_degradation_{cosine,bleu,ter}` (now one row per system) and `asymmetry_heatmap` (now one column per system). The three `scatter_*` remain here but are now per-backend *panels* inside one file rather than a pooled cloud |
+| **Total** | 43 | **52** | |
+
+```bash
+ls figures/*.png | wc -l          # 52
+ls figures/ | grep -v '\.png$'    # README.md
+```
+
+### 8b. The coverage gap (at audit time)
 
 The four unsuffixed-but-**Google-only** figures are the audit-relevant finding.
 Filenames do not disclose backend, so content was verified directly rather than
@@ -594,12 +699,46 @@ and combined figures were produced by pointing `--long-csv` at
 `combined_long.csv`, but the chain and round-trip inputs were left at their
 Google defaults.
 
+> **RESOLVED — the defaults now cover both backends.** `--chain-csv` and
+> `--roundtrip-csv` are now `nargs="*"` lists whose defaults name *both*
+> backends' CSVs, and `--long-csv` defaults to `combined_long.csv`. The paths
+> live in `visualization/__init__.py:40-48` as `DEFAULT_LONG_CSV`,
+> `DEFAULT_CHAIN_CSVS` and `DEFAULT_ROUNDTRIP_CSVS`; `run_all` concatenates
+> however many chain / round-trip CSVs it is given, which is how both systems
+> reach those figures. `scripts/make_figures.py:34-41` binds the flags to them.
+>
+> ```bash
+> grep -n "nargs\|DEFAULT_" scripts/make_figures.py
+> # 36:    p.add_argument("--chain-csv", nargs="*", default=list(DEFAULT_CHAIN_CSVS),
+> # 39:    p.add_argument("--roundtrip-csv", nargs="*", default=list(DEFAULT_ROUNDTRIP_CSVS),
+> ```
+>
+> The three per-backend consequences above are gone: `asymmetry_heatmap.png`
+> renders one column per system, `chain_degradation_*.png` one row per system,
+> and `roundtrip_nllb.png` exists.
+
 **Consequence for README line 70-75** ("Regenerate **every** figure from the
 committed result CSVs … `python scripts/make_figures.py`"): **WRONG as written.**
 That bare command reads Google-only CSVs and would regenerate only Google
 figures — it cannot reproduce the 16 NLLB figures or the 7 combined ones. The
 runtime estimate "~30 seconds" is **UNVERIFIED** (figures were deliberately not
 regenerated, to avoid overwriting committed artifacts).
+
+> **RESOLVED — the bare command is now correct.** `python scripts/make_figures.py`
+> with no arguments reproduces the full committed set: all 52 files, verified
+> rewritten in a single run with no errors or warnings. The figure count went
+> **43 → 52**; the nine new files are `roundtrip_nllb.png`,
+> `chain_degradation_{cosine,bleu,ter}_{google,nllb}.png` and
+> `asymmetry_heatmap_{google,nllb}.png`. The three unsuffixed
+> `chain_degradation_*.png` and `asymmetry_heatmap.png` kept their filenames but
+> are now two-system comparison figures rather than Google-only, so no committed
+> path was orphaned.
+>
+> The **"~30 seconds" estimate remains UNVERIFIED** — the regeneration was not
+> timed, so there is still no measurement to check it against. (The reason has
+> changed: figures *have* now been regenerated; they simply were not timed. The
+> README no longer states any runtime estimate, so nothing currently depends on
+> this figure.)
 
 **Additional contradiction:** `scatter_cosine_vs_bleu.png` displays
 **"Pearson r = 0.814"**, because it pools both backends (n=540). The README text
@@ -615,12 +754,41 @@ print('pooled n=%d r=%.4f'%(len(c), stats.pearsonr(c.cosine,c.bleu)[0]))"
 # pooled n=540 r=0.8142     ← matches the 0.814 printed in the PNG
 ```
 
+> **RESOLVED — the scatter is now split per system.** `scatter_*.png` renders one
+> panel per translation system, each annotated with its own *r*, *p* and *n*, and
+> each with its own OLS fit. The Google panel now prints **r = 0.651, n = 270**,
+> which is exactly the value the README quotes, so figure and prose agree. The
+> pooled statistic is no longer silently substituted: it appears as an explicit
+> footnote, "Panels are separate populations. Pooled across both systems:
+> r = 0.814 (n = 540)". Both numbers are now visible with their scopes attached.
+> No computed value changed — 0.6505 and 0.8142 are the same quantities verified
+> above, only differently disclosed.
+
 `figures/README.md` is **STALE**: it states figures come from
 `data/results/google/back_translation_long.csv` (line 3-4), describes the second
 translator as pending ("currently only Google; the second translator will appear
 once NLLB is run", line 36-37), marks telephone-chain and round-trip plots
 "*(forthcoming)*" (lines 76, 86) though both exist, and lists only the `_google`
 variants of every per-translator figure.
+
+> **RESOLVED — `figures/README.md` was rebuilt from the directory contents.**
+> It was in fact staler than this finding recorded: it listed **21 of 52**
+> figures, omitting not just the nine new ones but *every* `_nllb` variant
+> (`heatmap_nllb_*`, `bar_family_*_nllb`, `boxplot_*_nllb`, `radar_nllb`,
+> `corr_matrix_nllb`). The rebuild was done against `git ls-files figures` plus
+> the untracked new files rather than the old list, and verified group-by-group
+> against the 52 files on disk.
+>
+> All four original points are fixed: the input is now `combined_long.csv` plus
+> both backends' chain and round-trip CSVs, the "second translator will appear
+> once NLLB is run" line is gone, both *(forthcoming)* headings are gone, and
+> every per-translator figure is listed for both backends. The two further
+> discrepancies noted above are also fixed: the per-family heatmaps are now
+> described as **2×2** (matching what they became), and all nine new figures are
+> listed. Every section is tagged with the backend(s) it covers, with a
+> 21 / 21 / 10 coverage table at the top.
+>
+> With this, **every finding in §8 is resolved.**
 
 ---
 
@@ -668,6 +836,31 @@ Related identity facts (consistent, no action needed): `LICENSE` reads
 author `Jackson, Daniel`. The git commit author is `danjack0
 <danche.j.1018@gmail.com>`.
 
+> **RESOLVED in the README — STILL OPEN in `pyproject.toml`.** The README's
+> clone command now reads `danjack0`, matching both its own BibTeX entry and
+> `git remote -v`, and the BibTeX key was changed to `jackson2026fidelity`.
+>
+> Re-checking this finding across the whole repo, rather than the README alone,
+> surfaces two survivors that the original §9 did not examine — `pyproject.toml`
+> was out of its scope:
+>
+> ```bash
+> grep -n "github.com\|authors" pyproject.toml
+> # 12:authors = [{ name = "Daniel Jack" }]
+> # 57:Repository = "https://github.com/danjackdev/translation-fidelity-atlas"
+> ```
+>
+> * **`pyproject.toml:57`** still points `Repository` at `danjackdev`, the exact
+>   mismatch this section documents, in a second file.
+> * **`pyproject.toml:12`** names the author **"Daniel Jack"**, against
+>   "Daniel Jackson" in both `LICENSE` and the BibTeX entry. This is the same
+>   `Jack` → `Jackson` correction commit `0d5f87c` applied to the README's
+>   BibTeX and nowhere else.
+>
+> Both are package metadata, not documentation, and neither has been changed —
+> they are the only open items in this audit. Whether `github.com/danjackdev/…`
+> resolves remains **UNVERIFIED**; it would still require a network call.
+
 ---
 
 ## Appendix A — README claims verified as correct
@@ -695,6 +888,24 @@ Beyond the 13 Google statistics in §6g:
 ## Appendix B — Corrections needed in README.md
 
 Ordered by severity.
+
+> **Status (post-audit): all ten items are now done.** This is the to-do list as
+> it stood at `7d20fa2`; the list below is left as written so the original
+> findings stay visible.
+>
+> * **Items 1, 2, 5, 6, 7, 8** — done in the README rewrite, which reframed the
+>   project as a two-system study.
+> * **Item 3** — done in all three places: the README, `data/README.md` and
+>   `docs/methodology.md` now all state 141,088 unique cached translations /
+>   8.09 MB, worded as `len(cache)`.
+> * **Items 4 and 9** — done by closing the figure gap and regenerating (§8).
+> * **Item 10** — done: `figures/README.md` was rebuilt against the actual
+>   directory contents (§8).
+>
+> One item **outside** this list is still open, and it is not a README
+> correction: `pyproject.toml:57` still points `Repository` at
+> `github.com/danjackdev/…` rather than the `danjack0` remote — the same
+> mismatch §9 found in the README, in a file §9 did not examine. See §9.
 
 1. **Line 29-35** — scope the form/meaning paragraph to Google, or rewrite it.
    Its central BLEU claim reverses under NLLB (§7c), and the "idiomatic and
@@ -724,12 +935,12 @@ Ordered by severity.
 
 | Item | Why |
 |---|---|
-| "cache misses are ~0.3 s each" (line 88) | Requires live API calls — out of scope |
-| "~30 seconds" to regenerate figures (line 71) | Figures deliberately not regenerated (would overwrite committed artifacts) |
-| Whether `github.com/danjackdev/…` resolves | Requires a network call |
+| "cache misses are ~0.3 s each" (line 88) | Requires live API calls — out of scope. **Moot:** the README no longer makes any per-miss timing claim |
+| "~30 seconds" to regenerate figures (line 71) | **Still UNVERIFIED.** Figures *have* since been regenerated, but the run was not timed, so there is no measurement to check against. The README no longer states any runtime estimate, so nothing depends on it (§8) |
+| Whether `github.com/danjackdev/…` resolves | Requires a network call. Still relevant: the README no longer uses that URL, but `pyproject.toml:57` does (§9) |
 | Provenance of the exact figure `54,025` | Matches no cache state at any commit; Google back-translation alone is 54,000 |
-| "The free Google Translate endpoint changes silently" (143-144) | Claim about external service behaviour; not checkable from artifacts |
-| Corpora are "author-curated (one writer)" (147-148) | No authorship metadata in the repo |
+| "The free Google Translate endpoint changes silently" (143-144) | Claim about external service behaviour; not checkable from artifacts. Still stated in the README's Limitations |
+| Corpora are "author-curated (one writer)" (147-148) | No authorship metadata in the repo. Still stated in the README's Limitations and `docs/findings.md §7` |
 | `hr` legal BLEU = 7.19 under NLLB — genuine or data-quality issue | Diagnosis would require re-running/inspecting translations |
 
 ---

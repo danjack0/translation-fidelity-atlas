@@ -1,6 +1,18 @@
 # Data dictionary
 
-Files in this directory and the schema for each.
+Files in this directory and the schema for each. Both translation systems ran
+at full parity, so everything under `results/` exists twice — once per backend —
+plus a combined file.
+
+```
+data/
+├── corpora/                    # 6 × 100 English source sentences
+├── results/
+│   ├── google/                 # 12 files
+│   ├── nllb/                   # 12 files
+│   └── combined_long.csv       # 540 rows (google + nllb)
+└── translation_cache.json.gz   # 141,088 unique cached translations
+```
 
 ## `corpora/`
 
@@ -8,24 +20,28 @@ Six plain-text corpora. One sentence per line, UTF-8, English source.
 
 | File | Domain | n sentences | Description |
 |---|---|---:|---|
-| `conversational.txt` | Conversational | 99 | Casual everyday speech, contractions, informal register. |
-| `cultural.txt`       | Cultural       | 99 | Practices and references rooted in (US) culture. |
-| `emotional.txt`      | Emotional      | 99 | Affect-heavy first-person prose. |
-| `idiomatic.txt`      | Idiomatic      | 99 | Figurative language. |
-| `legal.txt`          | Legal          | 99 | Contractual and procedural register. |
-| `technical.txt`      | Technical      | 99 | Software / systems / engineering register. |
+| `conversational.txt` | Conversational | 100 | Casual everyday speech, contractions, informal register. |
+| `cultural.txt`       | Cultural       | 100 | Practices and references rooted in (US) culture. |
+| `emotional.txt`      | Emotional      | 100 | Affect-heavy first-person prose. |
+| `idiomatic.txt`      | Idiomatic      | 100 | Figurative language. |
+| `legal.txt`          | Legal          | 100 | Contractual and procedural register. |
+| `technical.txt`      | Technical      | 100 | Software / systems / engineering register. |
+
+**600 sentences total.** Note that `wc -l` reports 99 per file: there is no
+trailing newline, so the last sentence is not counted by a line-count that
+counts terminators.
 
 The same set of sentences is used for every (translator, language) cell so
 that scoring is comparable across systems and languages.
 
-## `results/google/back_translation_long.csv`
+## `results/{google,nllb}/back_translation_long.csv`
 
 Long-format result table: one row per (translator, family, language, domain).
-**This is the canonical results file** and the input every figure consumes.
+**This is the canonical results file.**
 
 | Column | Type | Description |
 |---|---|---|
-| `translator` | str | Backend short name. Currently `google`; `nllb` once that run is added. |
+| `translator` | str | Backend short name: `google` or `nllb`. Constant within each per-backend file. |
 | `family`     | str | Language family in `snake_case`. One of: `romance`, `germanic`, `slavic`, `semitic`, `east_asian`, `south_se_asian`, `turkic`, `uralic`. |
 | `language`   | str | ISO 639-1 (or BCP-47 for `zh-CN`) target language code. |
 | `domain`     | str | Content domain. One of: `conversational`, `cultural`, `idiomatic`, `technical`, `legal`, `emotional`. |
@@ -34,43 +50,59 @@ Long-format result table: one row per (translator, family, language, domain).
 | `ter`        | float | Corpus-level Translation Edit Rate via sacrebleu (range 0+, **lower better**). |
 | `embedding`  | float | Mean sentence-transformer `all-MiniLM-L6-v2` cosine similarity (semantic, range 0–1, higher better). |
 
-Row count: **270** for the Google run (45 languages × 6 domains).
+Row count: **270 per backend** (45 languages × 6 domains), no duplicate cells
+and no NaNs in any metric column.
 
-## `results/google/back_translation_wide.csv`
+## `results/combined_long.csv`
 
-Wide-format equivalent — one row per (translator, language). Convenient for
-spreadsheets but redundant with the long form.
+**540 rows** — a straight concatenation of the two files above, identical
+schema. Use this for cross-system analysis; it is what `make_figures.py` reads
+by default, and the per-translator figures split it back out internally.
 
-For each domain `D` and metric `M`, there is a column `{D}_{M}`, e.g.
-`technical_bleu`, `idiomatic_cosine`. There is also a `topical_{M}` column
-for each metric containing the within-language mean across all six domains.
+## `results/{google,nllb}/back_translation_wide.csv`
 
-## `results/google/per_family/{family}.csv`
+Wide-format equivalent — one row per (translator, language), **45 rows** and 31
+columns. Convenient for spreadsheets but redundant with the long form.
+
+For each domain `D` and metric `M` there is a column `{D}_{M}`, e.g.
+`technical_bleu`, `idiomatic_cosine` (24 columns), plus a `topical_{M}` column
+per metric holding the within-language mean across all six domains
+(`topical_cosine`, `topical_bleu`, `topical_ter`, `topical_embedding`). The
+leading three columns are `translator`, `family`, `language`.
+
+## `results/{google,nllb}/per_family/{family}.csv`
 
 Per-family wide-format checkpoints written incrementally during the
-back-translation run. Useful as restore points if the full run is
-interrupted, but otherwise redundant with the combined wide CSV.
+back-translation run — same columns as the wide CSV. **8 files per backend**,
+summing to 45 rows. Useful as restore points if the full run is interrupted,
+but otherwise redundant with the combined wide CSV.
 
-## `results/google/telephone_chain.csv` *(forthcoming)*
+## `results/{google,nllb}/telephone_chain.csv`
 
-Long-format. One row per (translator, order, domain, hop).
+Long-format. One row per (translator, order, domain, hop). **108 rows per
+backend** = 3 orders × 6 domains × 6 hops.
 
 | Column | Type | Description |
 |---|---|---|
 | `translator` | str | Backend short name. |
 | `order`      | str | One of `linguistic`, `reverse`, `random`. |
 | `domain`     | str | Content domain. |
-| `hop`        | int | 0 for the original, then 1..n for each step in the chain. |
+| `hop`        | int | 0 for the original, then 1..5 for each step in the chain. |
 | `lang_code`  | str | Language at this hop (`en` at hop 0). |
 | `cosine`     | float | Lexical cosine. |
 | `bleu`       | float | BLEU. |
 | `ter`        | float | TER. |
 
-Generated by `scripts/run_telephone_chain.py`.
+**Hop 0 is a synthetic perfect baseline** (cosine 1.0, BLEU 100.0, TER 0.0)
+written without any translation call, so only 5 hops are actually measured.
 
-## `results/google/round_trip.csv` *(forthcoming)*
+Generated by `scripts/run_telephone_chain.py --translator {google,nllb}`.
 
-Long-format. One row per (translator, language, domain, direction).
+## `results/{google,nllb}/round_trip.csv`
+
+Long-format. One row per (translator, language, domain, direction). **60 rows
+per backend** = 5 languages × 6 domains × 2 directions. The five languages are
+`ar`, `de`, `es`, `ja`, `ru` (the `linguistic` chain order).
 
 | Column | Type | Description |
 |---|---|---|
@@ -82,14 +114,28 @@ Long-format. One row per (translator, language, domain, direction).
 | `bleu`       | float | BLEU. |
 | `ter`        | float | TER. |
 
-Generated by `scripts/run_round_trip.py`.
+Generated by `scripts/run_round_trip.py --translator {google,nllb}`.
 
 ## `translation_cache.json.gz`
 
-Gzipped JSON. Maps MD5(`translator|src|tgt|text`) → translated string.
-Loaded transparently by the `experiments` modules; uncompressed form is in
-`.gitignore`.
+Gzipped JSON. Maps MD5(`translator|src|tgt|text`) → translated string. Keys are
+32-character hex digests; the backend name is inside the hash preimage, so it
+cannot be read off a key. Loaded transparently by the `experiments` modules;
+the uncompressed form is in `.gitignore`.
 
-* Entries:    54,025 (Google run only).
-* On disk:    ~3.1 MB gzipped (vs ~8.0 MB raw).
+* Entries:    **141,088 unique cached translations** — this is `len(cache)`, a
+              count of distinct cached entries, **not** a count of translation
+              operations. The three protocols across both backends imply
+              **162,000** operations; the cache holds fewer entries because
+              protocols reuse each other's work.
+* Split:      **69,962 Google** / **71,126 NLLB**, with **zero overlap**
+              (the translator name is part of the key preimage).
+* On disk:    **8.09 MB** gzipped (7.72 MiB), ~20.5 MB uncompressed.
+* Coverage:   replaying all six backend × protocol combinations against this
+              cache produces **zero misses** — re-running any committed
+              experiment costs no API calls.
 * Read API:   `translation_fidelity_atlas.translators.cache.load_cache`.
+
+See [`VERIFIED_FACTS.md §1`](../VERIFIED_FACTS.md#1-unique-keys-in-datatranslation_cachejsongz)
+and [`§5`](../VERIFIED_FACTS.md#5-total-translations-and-whether-141088-is-defensible)
+for the derivation of the split and the operation count.

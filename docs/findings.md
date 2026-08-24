@@ -1,12 +1,37 @@
-# Findings (Google Translate run)
+# Findings — the Google Translate run
 
-This document writes up what falls out of the single-pivot back-translation
-results. The NLLB-200 comparison run is in progress; this page will be
-updated when those results land.
+A deep dive on **one of the two systems** in this benchmark. Everything on this
+page is computed from the Google Translate single-pivot back-translation run
+only:
+[`data/results/google/back_translation_long.csv`](../data/results/google/back_translation_long.csv),
+270 cells. Reproduce with `python scripts/analyse.py --metric bleu`.
 
-All numbers come from
-[`data/results/google/back_translation_long.csv`](../data/results/google/back_translation_long.csv).
-The full analysis can be reproduced with `python scripts/analyse.py`.
+This page is deliberately **not** a two-system analysis. The cross-system
+comparison — what replicates between Google Translate and NLLB-200 and what does
+not — lives in the top-level README's
+[Typology travels. Domain difficulty belongs to the system.](../README.md#typology-travels-domain-difficulty-belongs-to-the-system)
+section, with the full derivation in
+[`VERIFIED_FACTS.md §7`](../VERIFIED_FACTS.md#7-do-google-and-nllb-agree-on-the-headline-findings).
+Keeping the cross-system findings in one place avoids two documents that have to
+be kept in sync.
+
+> ### ⚠ Scope: which of these findings survive a change of system
+>
+> Both systems ran at full parity (identical 45 languages, 8 families, 6 domains,
+> all three protocols), so every claim here has been checked against NLLB-200.
+> The answer splits cleanly:
+>
+> * **The family-level findings replicate.** Family still dominates domain on
+>   BLEU under NLLB (η² 0.52 vs 0.18), and the family *ranking* transfers almost
+>   intact — Spearman **ρ = +0.90** (*p* = 0.002). East Asian is worst under both.
+>   §1 and §2 below are therefore about *language*, not about Google.
+> * **The domain-level findings do not.** The domain ranking is uncorrelated
+>   across the two systems — Spearman **ρ = +0.09** (*p* = 0.87). Technical goes
+>   from **1st under Google to 5th of 6 under NLLB**; emotional goes from
+>   **worst (6th) to 3rd best**. So §3 — and every domain claim anywhere on this
+>   page — describes *Google Translate*, not back-translation in general.
+>
+> Details: [`VERIFIED_FACTS.md §7c`](../VERIFIED_FACTS.md#7c-where-they-disagree--the-domain-finding-does-not-replicate).
 
 ## 1. Family dominates domain (on BLEU)
 
@@ -19,7 +44,8 @@ A one-way ANOVA on each factor gives:
 
 By BLEU, language family explains **3.3× more variance than content domain**.
 Both effects are highly significant, but the magnitudes are very different.
-This is the headline result.
+This is the headline result — and it is the one that **replicates under
+NLLB-200** (η² 0.52 vs 0.18, a 2.88× ratio).
 
 The picture changes when we switch to cosine similarity:
 
@@ -31,6 +57,13 @@ The picture changes when we switch to cosine similarity:
 On cosine similarity, family and domain contribute roughly equally. Form
 preservation (BLEU) is dominated by family; meaning preservation (cosine)
 distributes between the two factors.
+
+A scope note on "family dominates": that is a **surface-form** result. It holds
+on BLEU and TER for both systems, but inverts on one semantic metric in each —
+under Google's sentence-transformer embedding, domain wins (η² 0.557 vs family
+0.192). "Family explains more variance" is true of how much the *wording*
+changes, not of how much the *meaning* changes
+([`§6`](../VERIFIED_FACTS.md#6-recomputed-statistics-per-backend)).
 
 ## 2. Family ranking
 
@@ -55,9 +88,18 @@ exception is Semitic, which lands second despite being non-Indo-European —
 likely a function of high-resource pivots (Arabic, Hebrew) and well-trained
 Google Translate models.
 
-## 3. Domain ranking flips between metrics
+**This ordering transfers.** Under NLLB-200 the same ranking comes back at
+Spearman ρ = +0.90: East Asian worst in both, Turkic second-worst in both,
+Germanic and Romance the top two in both. Semitic slips from 2nd to 3rd, which
+is consistent with the high-resource explanation above being Google-specific
+while the broad typological gradient is not.
 
-This is the most interesting result. Sorted by **BLEU**:
+## 3. Domain ranking flips between metrics *(Google-specific)*
+
+> **This section does not replicate under NLLB-200** (domain rank ρ = +0.09,
+> *p* = 0.87). Read every number below as a fact about Google Translate.
+
+Sorted by **BLEU**:
 
 | Domain | Mean BLEU | Mean Cosine |
 |---|---:|---:|
@@ -69,7 +111,9 @@ This is the most interesting result. Sorted by **BLEU**:
 | Emotional       | 59.92 | 0.9887 |
 
 By BLEU, technical text is the easiest to round-trip (72.7) and emotional
-text is the hardest (59.9) — a 13-point gap.
+text is the hardest (59.9) — a 13-point gap. Note how narrow the middle is:
+four domains sit inside a 0.5-point band (64.05–64.49), so the only real
+separations here are technical above and emotional below.
 
 Sorted by **cosine similarity**:
 
@@ -82,9 +126,14 @@ Sorted by **cosine similarity**:
 | Idiomatic       | 0.9809 | 64.37 |
 | Cultural        | 0.9801 | 64.05 |
 
-Now emotional text is *most* preserved and technical drops to fourth.
-Idiomatic and cultural are at the bottom of both rankings — the only
-domains that fail in form *and* meaning.
+Now emotional text is *most* preserved and technical drops to fourth. The
+cleanest illustration of the split is **emotional**, which is simultaneously the
+**worst** domain on BLEU (59.92) and the **best** on cosine (0.9887) — the words
+come back different, the meaning comes back intact. Cultural is the mirror case,
+last on cosine and fifth on BLEU. Idiomatic is *not* a both-metrics failure: it
+is second-worst on cosine (0.9809) but **third-best on BLEU** (64.37), above
+legal and cultural
+([`§7d`](../VERIFIED_FACTS.md#7d-a-readme-claim-that-is-wrong-for-both-backends)).
 
 The story: technical terminology and named entities survive intact word-
 for-word (high BLEU), but their *meaning* is preserved no better than
@@ -96,6 +145,11 @@ BLEU we would conclude that emotional translation is the hard problem and
 technical is solved; in cosine similarity terms, that's not what's
 happening.
 
+That form/meaning gap is itself real in both systems, though **about half as
+large under NLLB** (Pearson *r* between BLEU and cosine is 0.651 for Google
+against 0.761 for NLLB). What does *not* carry over is which specific domains
+land where.
+
 ## 4. Metric correlations
 
 Pairwise Pearson correlations across the 270 cells:
@@ -104,8 +158,8 @@ Pairwise Pearson correlations across the 270 cells:
 |---|---:|---:|---:|---:|
 | Cosine    | 1.000 | 0.651 | -0.627 | 0.371 |
 | BLEU      | 0.651 | 1.000 | -0.972 | 0.664 |
-| TER       | -0.627 | -0.972 | 1.000 | -0.561 |
-| Embedding | 0.371 | 0.664 | -0.561 | 1.000 |
+| TER       | -0.627 | -0.972 | 1.000 | -0.766 |
+| Embedding | 0.371 | 0.664 | -0.766 | 1.000 |
 
 All correlations significant at *p* < 0.001 (n = 270).
 
@@ -149,20 +203,33 @@ Three observations:
 | Turkic           | Kazakh (`kk`)      | Emotional      | 44.88 |
 
 The Germanic-technical sweep at the top is striking — five of the top six
-cells are Germanic technical or legal. The bottom is more diverse: failure
-spreads across families and domains. It is harder to be reliably good at
-back-translation than reliably bad.
+cells are Germanic technical or legal (the sixth is Galician technical, 83.77).
+The bottom is more diverse: failure spreads across families and domains. It is
+harder to be reliably good at back-translation than reliably bad.
 
-## 6. What's missing (work in progress)
+Under NLLB-200 the extremes are different in both level and identity: the best
+cell is Norwegian conversational at 63.97 and the worst is Croatian legal at
+7.19, the latter flagged as a possible data-quality issue rather than a
+diagnosed result.
 
-* **NLLB-200 comparison run.** Code is implemented, will be run once the
-  600M-distilled checkpoint can be staged on appropriate hardware. The
-  research interest is whether NLLB closes the East-Asian gap (it was
-  trained with explicit attention to lower-resource families) and whether
-  the form-vs-meaning split changes shape on a non-commercial system.
-* **Telephone-chain results.** Three orderings × six domains, code complete,
-  not yet run.
-* **ABA / BAB directional asymmetry.** Code complete, not yet run.
+## 6. What this page does not cover
+
+Nothing listed here is blocked or unrun — the data exists and is committed. This
+is a scope boundary, not a backlog.
+
+* **The other system.** NLLB-200 ran at full parity and its results are in
+  [`data/results/nllb/`](../data/results/nllb/). Its per-backend figures are in
+  [`figures/`](../figures/). The cross-system analysis is in the README and
+  `VERIFIED_FACTS.md §7`, not here.
+* **The other two protocols.** This page writes up **single-pivot
+  back-translation only**. The telephone-chain (108 rows per backend) and
+  ABA/BAB round-trip (60 rows per backend) results are committed for both
+  systems and plotted in `figures/`, but have no prose write-up yet. That is the
+  clearest piece of genuine remaining work.
+* **The Croatian legal outlier.** NLLB scores `hr` legal at BLEU 7.19, roughly
+  28 points below the mean of its own domain and an 8.65× drop from Google's
+  62.21 on the same cell. Whether that is a real result or a data-quality
+  problem is undiagnosed.
 
 ## 7. Interpretation cautions
 
@@ -179,3 +246,6 @@ back-translation than reliably bad.
 * All sentences are author-curated. A multi-author corpus would tighten the
   within-domain variance and let us decompose corpus-author effects from
   domain effects.
+* **Do not generalise the domain results.** They are the part of this page that
+  demonstrably fails to survive a change of translation system. Any domain-level
+  claim taken from here needs "under Google Translate" attached to it.

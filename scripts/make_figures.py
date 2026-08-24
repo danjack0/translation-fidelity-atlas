@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Regenerate every figure from the saved result CSVs.
+Regenerate every figure from the saved result CSVs, for every backend present.
 
-Does not call any translator — purely consumes the CSVs in
-``data/results/`` and writes PNGs to ``figures/``. Safe to run repeatedly.
+Does not call any translator — purely consumes the CSVs in ``data/results/``
+and writes PNGs to ``figures/``. Safe to run repeatedly.
+
+The defaults cover both translation systems: the combined long CSV drives the
+per-backend and cross-backend figures, and the chain / round-trip inputs are
+lists that are concatenated, so Google and NLLB-200 both appear.
 """
 
 from __future__ import annotations
@@ -16,15 +20,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from translation_fidelity_atlas.visualization import run_all  # noqa: E402
+from translation_fidelity_atlas.visualization import (  # noqa: E402
+    DEFAULT_CHAIN_CSVS,
+    DEFAULT_LONG_CSV,
+    DEFAULT_ROUNDTRIP_CSVS,
+    run_all,
+)
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--long-csv", default="data/results/google/back_translation_long.csv")
-    p.add_argument("--chain-csv", default="data/results/google/telephone_chain.csv")
-    p.add_argument("--roundtrip-csv", default="data/results/google/round_trip.csv")
+    p.add_argument("--long-csv", default=DEFAULT_LONG_CSV,
+                   help="(default: %(default)s — both backends)")
+    p.add_argument("--chain-csv", nargs="*", default=list(DEFAULT_CHAIN_CSVS),
+                   help="one or more telephone-chain CSVs, concatenated "
+                        "(default: both backends)")
+    p.add_argument("--roundtrip-csv", nargs="*", default=list(DEFAULT_ROUNDTRIP_CSVS),
+                   help="one or more round-trip CSVs, concatenated "
+                        "(default: both backends)")
     p.add_argument("--output-dir", default="figures")
     args = p.parse_args()
 

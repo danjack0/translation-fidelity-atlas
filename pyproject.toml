@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
@@ -9,7 +9,7 @@ description = "Multi-system, multi-family, multi-domain back-translation fidelit
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
-authors = [{ name = "Daniel Jack" }]
+authors = [{ name = "Daniel Jackson" }]
 keywords = [
     "machine-translation",
     "back-translation",
@@ -54,7 +54,7 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/danjackdev/translation-fidelity-atlas"
+Repository = "https://github.com/danjack0/translation-fidelity-atlas"
 
 [tool.setuptools.packages.find]
 where = ["src"]

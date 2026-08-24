@@ -1,12 +1,16 @@
 """
 All figure-generating functions, plus a single master entrypoint
 :func:`run_all` that loads result CSVs and emits every figure.
+
+Styling lives in :mod:`.style` and nowhere else; importing any plotting module
+applies it.
 """
 
 from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -24,28 +28,71 @@ from .chain_plots import (
     plot_round_trip,
 )
 from .heatmaps import plot_family_heatmaps
+from .style import apply_style, savefig
 
 log = logging.getLogger(__name__)
 
+PathLike = str | os.PathLike
+
+#: Both systems ran all three protocols, so every default here covers both.
+#: ``combined_long.csv`` is the concatenation of the two per-backend long CSVs;
+#: the per-translator figures split it back out internally.
+DEFAULT_LONG_CSV: str = "data/results/combined_long.csv"
+DEFAULT_CHAIN_CSVS: tuple[str, ...] = (
+    "data/results/google/telephone_chain.csv",
+    "data/results/nllb/telephone_chain.csv",
+)
+DEFAULT_ROUNDTRIP_CSVS: tuple[str, ...] = (
+    "data/results/google/round_trip.csv",
+    "data/results/nllb/round_trip.csv",
+)
+
+
+def _load_many(paths: PathLike | Sequence[PathLike] | None,
+               what: str) -> pd.DataFrame | None:
+    """Read and concatenate however many CSVs were given; warn on missing ones."""
+    if paths is None:
+        return None
+    if isinstance(paths, (str, os.PathLike)):
+        paths = [paths]
+
+    frames: list[pd.DataFrame] = []
+    for p in paths:
+        if Path(p).exists():
+            log.info("  %s: %s", what, p)
+            frames.append(pd.read_csv(p))
+        else:
+            log.warning("  Skipping %s — %s not found", what, p)
+
+    if not frames:
+        return None
+    df = pd.concat(frames, ignore_index=True)
+    log.info("  %s: %d rows, translators=%s",
+             what, len(df), sorted(df["translator"].unique()))
+    return df
+
 
 def run_all(
-    long_csv:      str | os.PathLike = "data/results/google/back_translation_long.csv",
-    chain_csv:     str | os.PathLike = "data/results/google/telephone_chain.csv",
-    roundtrip_csv: str | os.PathLike = "data/results/google/round_trip.csv",
-    output_dir:    str | os.PathLike = "figures",
+    long_csv:      PathLike = DEFAULT_LONG_CSV,
+    chain_csv:     PathLike | Sequence[PathLike] | None = DEFAULT_CHAIN_CSVS,
+    roundtrip_csv: PathLike | Sequence[PathLike] | None = DEFAULT_ROUNDTRIP_CSVS,
+    output_dir:    PathLike = "figures",
 ) -> None:
     """
-    Generate every figure the project produces.
+    Generate every figure the project produces, for every backend present.
 
-    Missing chain / round-trip CSVs are skipped with a warning rather than
-    raised — useful while developing those experiments.
+    ``chain_csv`` and ``roundtrip_csv`` each accept a single path or a sequence
+    of paths, which are concatenated — that is how both translation systems end
+    up in the chain and round-trip figures. Missing CSVs are skipped with a
+    warning rather than raised.
     """
+    apply_style()
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     log.info("Loading main results: %s", long_csv)
     df = pd.read_csv(long_csv)
-    log.info("  %d rows", len(df))
+    log.info("  %d rows, translators=%s", len(df), sorted(df["translator"].unique()))
 
     log.info("[1/8] Per-family heatmaps ...")
     plot_family_heatmaps(df, output_dir)
@@ -68,26 +115,27 @@ def run_all(
     log.info("[7/8] Metric correlation matrices ...")
     plot_correlation_matrix(df, output_dir)
 
-    if Path(chain_csv).exists():
-        log.info("[8a] Telephone-chain degradation curves ...")
-        chain_df = pd.read_csv(chain_csv)
+    log.info("[8a] Telephone-chain degradation curves ...")
+    chain_df = _load_many(chain_csv, "chain")
+    if chain_df is not None:
         plot_chain_degradation(chain_df, output_dir)
-    else:
-        log.warning("Skipping chain plots — %s not found", chain_csv)
 
-    if Path(roundtrip_csv).exists():
-        log.info("[8b] Round-trip asymmetry plots ...")
-        rt_df = pd.read_csv(roundtrip_csv)
+    log.info("[8b] Round-trip asymmetry plots ...")
+    rt_df = _load_many(roundtrip_csv, "round-trip")
+    if rt_df is not None:
         plot_round_trip(rt_df, output_dir)
         plot_asymmetry_heatmap(rt_df, output_dir)
-    else:
-        log.warning("Skipping round-trip plots — %s not found", roundtrip_csv)
 
     log.info("All figures written to: %s", output_dir)
 
 
 __all__ = [
     "run_all",
+    "savefig",
+    "apply_style",
+    "DEFAULT_LONG_CSV",
+    "DEFAULT_CHAIN_CSVS",
+    "DEFAULT_ROUNDTRIP_CSVS",
     "plot_family_heatmaps",
     "plot_family_bars",
     "plot_domain_bars",

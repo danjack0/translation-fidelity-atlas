@@ -14,8 +14,10 @@ protocols, two metric families, and two MT systems.
 
 ## Corpora
 
-Six English-source corpora, each curated to be register-distinct and roughly
-~100 sentences:
+Six English-source corpora, each curated to be register-distinct and
+**exactly 100 sentences** (600 in total). Note that `wc -l` reports 99 per
+file: there is no trailing newline, so a line-count that counts terminators
+misses the last sentence.
 
 | Domain | Description | Examples |
 |---|---|---|
@@ -47,9 +49,10 @@ and idiomatic are mixed.
 | Turkic         | tr, az, kk, uz                               | 4 |
 | Uralic         | fi, et, hu                                   | 3 |
 
-Selection criteria: complete Google Translate coverage, multiple
+Selection criteria: coverage in **both** translation systems, multiple
 representatives per family where available, and script diversity (Latin,
-Cyrillic, Arabic, CJK, Indic).
+Cyrillic, Arabic, CJK, Indic). Both systems ran the identical 45 languages —
+NLLB-200 is not a subset — so every cross-system comparison is like-for-like.
 
 ## Translation systems
 
@@ -78,8 +81,9 @@ For every (system × family × language × domain) cell:
 2. Translate target language → `en`.
 3. Score the back-translated English against the original.
 
-This yields 2 systems × 45 languages × 6 domains = 540 cells per run, each
-scored on four metrics (cosine, BLEU, TER, embedding).
+This yields 45 languages × 6 domains = **270 cells per system**, and
+2 systems × 270 = **540 scored cells in total**, each scored on four metrics
+(cosine, BLEU, TER, embedding).
 
 ### Telephone chain (multi-hop)
 
@@ -147,7 +151,16 @@ and accessible via `python scripts/analyse.py`.
 * Every translation is MD5-keyed by `(translator, src, tgt, text)` and
   cached on disk. Re-running an experiment after adding a new domain or
   language only hits the API for the new cells.
-* The committed cache (`data/translation_cache.json.gz`, 3 MB gzipped, 54k
-  entries) covers the full Google Translate single-pivot run.
+* The committed cache (`data/translation_cache.json.gz`, **8.09 MB gzipped**)
+  holds **141,088 unique cached translations** — that is `len(cache)`, a count
+  of distinct cached entries, not a count of translation operations. It splits
+  **69,962 Google / 71,126 NLLB with zero overlap**, since the translator name
+  is part of the MD5 key preimage. It covers **all three protocols for both
+  systems**: replaying every backend × protocol combination against it produces
+  zero cache misses, so re-running any committed experiment costs no API calls.
+  The 162,000 translation operations the protocols imply exceed the entry count
+  because protocols reuse each other's work. Derivation:
+  [`VERIFIED_FACTS.md §1`](../VERIFIED_FACTS.md#1-unique-keys-in-datatranslation_cachejsongz)
+  and [`§5`](../VERIFIED_FACTS.md#5-total-translations-and-whether-141088-is-defensible).
 * All random orderings are seed-frozen.
 * Library versions are pinned in `pyproject.toml`.

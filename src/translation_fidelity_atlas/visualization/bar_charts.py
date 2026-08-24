@@ -14,13 +14,14 @@ from ..config import (
     DOMAIN_COLORS,
     DOMAIN_ORDER,
     FAMILY_ORDER,
-    METRIC_HIGHER_IS_BETTER,
-    METRIC_LABELS,
     TRANSLATOR_COLORS,
+    TRANSLATOR_HATCHES,
     TRANSLATOR_ORDER,
-    family_display_name,
+    family_tick_label,
+    metric_axis_label,
+    translator_display_name,
 )
-from ._utils import savefig
+from .style import WIDTH_2COL, legend_below, savefig, style_axes
 
 
 def plot_family_bars(df: pd.DataFrame, output_dir: str | Path) -> None:
@@ -36,7 +37,7 @@ def plot_family_bars(df: pd.DataFrame, output_dir: str | Path) -> None:
         sub = df[df["translator"] == translator]
 
         for metric in metrics:
-            fig, ax = plt.subplots(figsize=(11, 5))
+            fig, ax = plt.subplots(figsize=(WIDTH_2COL, 2.9))
             families  = [f for f in FAMILY_ORDER if f in sub["family"].unique()]
             x         = np.arange(len(families))
             n_domains = len(DOMAIN_ORDER)
@@ -49,44 +50,50 @@ def plot_family_bars(df: pd.DataFrame, output_dir: str | Path) -> None:
                 offset = (i - n_domains / 2 + 0.5) * bar_w
                 ax.bar(
                     x + offset, means, bar_w,
-                    yerr=stds, capsize=3,
-                    color=DOMAIN_COLORS.get(domain, "#999"),
-                    label=domain.capitalize(), alpha=0.88,
-                    error_kw={"elinewidth": 0.8, "alpha": 0.6},
+                    yerr=stds, capsize=1.5,
+                    color=DOMAIN_COLORS.get(domain, "#999999"),
+                    label=domain.capitalize(),
+                    linewidth=0.3, edgecolor="white",
+                    error_kw={"elinewidth": 0.6, "ecolor": "#5A5A5A"},
                 )
 
             ax.set_xticks(x)
-            ax.set_xticklabels(
-                [family_display_name(f).replace(" ", "\n") for f in families],
-                fontsize=9,
-            )
-            ax.set_xlabel("Language Family")
-            ax.set_ylabel(METRIC_LABELS[metric])
-            direction = "↑ higher is better" if METRIC_HIGHER_IS_BETTER[metric] else "↓ lower is better"
+            ax.set_xticklabels([family_tick_label(f) for f in families])
+            ax.set_xlabel("Language family")
+            ax.set_ylabel(metric_axis_label(metric))
             ax.set_title(
-                f"{translator.capitalize()} — {METRIC_LABELS[metric]} by Family & Domain  ({direction})",
-                fontweight="bold",
+                f"{translator_display_name(translator)} — "
+                f"{metric_axis_label(metric).split(' (')[0]} by family and domain"
             )
+            ax.set_xlim(-0.5, len(families) - 0.5)
             if metric == "cosine":
                 ax.set_ylim(0.0, 1.0)
-            ax.legend(title="Domain", loc="lower left", ncol=2,
-                      fontsize=8, title_fontsize=8)
+            style_axes(ax)
+
+            handles, labels = ax.get_legend_handles_labels()
+            legend_below(fig, handles, labels, ncol=6, title=None, y=-0.02)
             fig.tight_layout()
             savefig(fig, output_dir / f"bar_family_{metric}_{translator}.png")
 
 
 def plot_domain_bars(df: pd.DataFrame, output_dir: str | Path) -> None:
-    """For each metric, plot per-domain means grouped by translator."""
+    """
+    For each metric, plot per-domain means grouped by translator.
+
+    This is the one bar chart that puts the two systems side by side, so the
+    translators are separated by hatch as well as colour and stay readable in
+    greyscale.
+    """
     metrics = [m for m in ("cosine", "bleu", "ter") if m in df.columns]
     output_dir = Path(output_dir)
 
     for metric in metrics:
-        fig, ax = plt.subplots(figsize=(9, 4.5))
+        fig, ax = plt.subplots(figsize=(WIDTH_2COL * 0.72, 2.8))
         domains = [d for d in DOMAIN_ORDER if d in df["domain"].unique()]
         translators = [t for t in TRANSLATOR_ORDER if t in df["translator"].unique()]
 
-        x       = np.arange(len(domains))
-        bar_w   = 0.8 / max(len(translators), 1)
+        x     = np.arange(len(domains))
+        bar_w = 0.72 / max(len(translators), 1)
 
         for i, translator in enumerate(translators):
             sub    = df[df["translator"] == translator]
@@ -95,19 +102,21 @@ def plot_domain_bars(df: pd.DataFrame, output_dir: str | Path) -> None:
             offset = (i - (len(translators) - 1) / 2) * bar_w
             ax.bar(
                 x + offset, means, bar_w,
-                yerr=stds, capsize=3,
-                color=TRANSLATOR_COLORS.get(translator, "#888"),
-                label=translator.capitalize(), alpha=0.88,
-                error_kw={"elinewidth": 0.8, "alpha": 0.6},
+                yerr=stds, capsize=1.5,
+                color=TRANSLATOR_COLORS.get(translator, "#888888"),
+                hatch=TRANSLATOR_HATCHES.get(translator, ""),
+                label=translator_display_name(translator),
+                linewidth=0.4, edgecolor="white",
+                error_kw={"elinewidth": 0.6, "ecolor": "#5A5A5A"},
             )
 
         ax.set_xticks(x)
-        ax.set_xticklabels([d.capitalize() for d in domains], fontsize=10)
+        ax.set_xticklabels([d.capitalize() for d in domains])
         ax.set_xlabel("Domain")
-        ax.set_ylabel(METRIC_LABELS[metric])
-        direction = "↑ higher is better" if METRIC_HIGHER_IS_BETTER[metric] else "↓ lower is better"
-        ax.set_title(f"{METRIC_LABELS[metric]} by Domain ({direction})",
-                     fontweight="bold")
-        ax.legend(title="Translator", fontsize=9, title_fontsize=9)
+        ax.set_ylabel(metric_axis_label(metric))
+        ax.set_title(f"{metric_axis_label(metric).split(' (')[0]} by domain")
+        ax.set_xlim(-0.5, len(domains) - 0.5)
+        style_axes(ax)
+        ax.legend(loc="best")
         fig.tight_layout()
         savefig(fig, output_dir / f"bar_domain_{metric}.png")
