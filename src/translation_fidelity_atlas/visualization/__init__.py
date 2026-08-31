@@ -27,7 +27,7 @@ from .chain_plots import (
     plot_chain_degradation,
     plot_round_trip,
 )
-from .heatmaps import plot_family_heatmaps
+from .heatmaps import plot_all_language_heatmap, plot_family_heatmaps
 from .style import apply_style, savefig
 
 log = logging.getLogger(__name__)
@@ -85,6 +85,10 @@ def run_all(
     of paths, which are concatenated — that is how both translation systems end
     up in the chain and round-trip figures. Missing CSVs are skipped with a
     warning rather than raised.
+
+    Step [1/9] is the full-coverage overview — every language at once, both
+    systems side by side, rows banded by family — and step [2/9] the per-family
+    detail behind it. Both come from ``long_csv``; neither calls a translator.
     """
     apply_style()
     output_dir = Path(output_dir)
@@ -94,33 +98,36 @@ def run_all(
     df = pd.read_csv(long_csv)
     log.info("  %d rows, translators=%s", len(df), sorted(df["translator"].unique()))
 
-    log.info("[1/8] Per-family heatmaps ...")
+    log.info("[1/9] Full-coverage heatmaps (all languages, both systems) ...")
+    plot_all_language_heatmap(df, output_dir)
+
+    log.info("[2/9] Per-family heatmaps ...")
     plot_family_heatmaps(df, output_dir)
 
-    log.info("[2/8] Per-family bar charts ...")
+    log.info("[3/9] Per-family bar charts ...")
     plot_family_bars(df, output_dir)
 
-    log.info("[3/8] Per-domain bar charts ...")
+    log.info("[4/9] Per-domain bar charts ...")
     plot_domain_bars(df, output_dir)
 
-    log.info("[4/8] Metric-pair scatter plots ...")
+    log.info("[5/9] Metric-pair scatter plots ...")
     plot_metric_scatter(df, output_dir)
 
-    log.info("[5/8] Radar charts ...")
+    log.info("[6/9] Radar charts ...")
     plot_radar(df, output_dir)
 
-    log.info("[6/8] Family box plots ...")
+    log.info("[7/9] Family box plots ...")
     plot_family_boxplots(df, output_dir)
 
-    log.info("[7/8] Metric correlation matrices ...")
+    log.info("[8/9] Metric correlation matrices ...")
     plot_correlation_matrix(df, output_dir)
 
-    log.info("[8a] Telephone-chain degradation curves ...")
+    log.info("[9a] Telephone-chain degradation curves ...")
     chain_df = _load_many(chain_csv, "chain")
     if chain_df is not None:
         plot_chain_degradation(chain_df, output_dir)
 
-    log.info("[8b] Round-trip asymmetry plots ...")
+    log.info("[9b] Round-trip asymmetry plots ...")
     rt_df = _load_many(roundtrip_csv, "round-trip")
     if rt_df is not None:
         plot_round_trip(rt_df, output_dir)
@@ -136,6 +143,7 @@ __all__ = [
     "DEFAULT_LONG_CSV",
     "DEFAULT_CHAIN_CSVS",
     "DEFAULT_ROUNDTRIP_CSVS",
+    "plot_all_language_heatmap",
     "plot_family_heatmaps",
     "plot_family_bars",
     "plot_domain_bars",

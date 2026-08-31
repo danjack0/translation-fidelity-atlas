@@ -112,6 +112,15 @@ technical sits far above and emotional below; under NLLB that structure is
 simply gone, replaced by a different one
 ([§7c](VERIFIED_FACTS.md#7c-where-they-disagree--the-domain-finding-does-not-replicate)).
 
+**The technical prediction was made in advance.** The corpus generation
+specification ([docs/corpus_spec.md](docs/corpus_spec.md)), written before any
+translation ran, states that technical text 'is expected to score highest in
+back-translation fidelity because technical vocabulary is often borrowed across
+languages or has established equivalents.' That expectation is confirmed under
+Google (1st of 6, 72.71 BLEU) and refuted under NLLB (5th of 6, 39.04). The
+reversal is therefore not a post-hoc reading of the data: the hypothesis was
+recorded, one system met it, and the other did not.
+
 **Read that as a finding, not a failure.** Typological distance is a property
 of the language pair, and it shows up in any system that has to cross it.
 Register difficulty is a property of what a given system was trained to
@@ -348,8 +357,20 @@ Field-level documentation lives in [`data/README.md`](data/README.md).
   annotations carry the exact values, and the Google differences being
   compressed there (0.000–0.020) are within noise, so no colour transform was
   applied to manufacture contrast between them.
-* Domain corpora are author-curated (one writer); a multi-author corpus
-  would tighten the within-domain noise.
+* Domain corpora are LLM-generated against a fixed written specification
+  ([docs/corpus_spec.md](docs/corpus_spec.md)) and spot-checked rather than
+  reviewed line by line; they are not sampled from naturally occurring text. The
+  spec fixes sentence length (8-25 words, target 12-18), requires one idea per
+  sentence, and forbids cross-domain contamination (no idioms in the
+  conversational set, no technical vocabulary outside the technical set). This
+  buys comparability a natural corpus cannot: length and syntactic complexity are
+  held roughly constant across domains, so a domain effect is unlikely to be a
+  length effect in disguise. The cost is that domain boundaries are only as
+  distinct as the spec made them. Since the domain effect is the finding that
+  does *not* replicate across systems, this is the limitation most relevant to
+  interpreting that result - a robustness check against externally constructed
+  domain corpora (e.g. OPUS domain splits, where domain follows from provenance
+  rather than from a prompt) is planned.
 
 ## License
 

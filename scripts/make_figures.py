@@ -8,6 +8,10 @@ and writes PNGs to ``figures/``. Safe to run repeatedly.
 The defaults cover both translation systems: the combined long CSV drives the
 per-backend and cross-backend figures, and the chain / round-trip inputs are
 lists that are concatenated, so Google and NLLB-200 both appear.
+
+Running it bare regenerates everything, including the two full-coverage
+overviews — ``heatmap_all_languages_bleu.png`` and its z-scored twin — which
+read straight out of the combined long CSV alongside the per-family heatmaps.
 """
 
 from __future__ import annotations
