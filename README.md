@@ -30,6 +30,8 @@ README.
 
 ## TL;DR — headline findings
 
+![Language family explains ~3x more BLEU variance than content domain](figures/headline_family_vs_domain_bleu.png)
+
 ### What replicates across both systems
 
 | Finding | Replicates? | Evidence |
