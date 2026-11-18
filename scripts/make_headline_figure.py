@@ -6,7 +6,7 @@ language family vs. content domain, side by side for each translation backend.
 Reads ``data/results/combined_long.csv`` and computes eta-squared with the
 repo's own ``one_way_anova`` (the same numbers as VERIFIED_FACTS.md §6a), so the
 figure never carries hand-typed values. Writes
-``figures/headline_family_vs_domain_bleu.png`` (1800x940, sized for a social
+``figures/headline_family_vs_domain_bleu.png`` (3600x1880 at 300 dpi, sized for a social
 or README preview). Safe to run repeatedly; no translator calls.
 """
 
@@ -51,7 +51,7 @@ def compute(df: pd.DataFrame) -> list[dict]:
 
 def draw(rows: list[dict], out: Path) -> None:
     plt.rcParams["font.family"] = "DejaVu Sans"
-    fig, ax = plt.subplots(figsize=(12, 6.27), dpi=150)
+    fig, ax = plt.subplots(figsize=(12, 6.27), dpi=300)
     fig.patch.set_facecolor(SURF)
     ax.set_facecolor(SURF)
 

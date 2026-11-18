@@ -53,7 +53,7 @@ read-only.
 | 6 | Google headline statistics | **OK** — all 9 TL;DR numbers reproduce |
 | 7 | Google vs NLLB agreement | **Family finding holds. Domain finding REVERSES.** See §7 |
 | 8 | Figures | *At audit:* 43 PNGs; **STALE/INCOMPLETE** — chain and round-trip figures Google-only despite NLLB data existing. **→ FULLY RESOLVED:** 52 PNGs, 21/21 per-backend parity, scatter split per system, `figures/README.md` rebuilt. See §8 |
-| 9 | Clone URL vs BibTeX URL | **WRONG — mismatched** `danjackdev` vs `danjack0`. **→ FIXED in README** (both now `danjack0`). **STILL OPEN elsewhere:** `pyproject.toml:57` keeps the `danjackdev` URL, and `pyproject.toml:12` names the author "Daniel Jack" against "Daniel Jackson" in LICENSE and BibTeX. See §9 |
+| 9 | Clone URL vs BibTeX URL | **WRONG — mismatched** `danjackdev` vs `danjack0`. **→ FIXED in README** (both now `danjack0`). **→ FIXED in `pyproject.toml` too** (author "Daniel Jackson", Repository URL `danjack0`). See §9 |
 
 The single most consequential finding is **§7**: the README's form-versus-meaning
 narrative — which it calls "the most interesting result" — is a Google-only
@@ -860,6 +860,10 @@ author `Jackson, Daniel`. The git commit author is `danjack0
 > Both are package metadata, not documentation, and neither has been changed —
 > they are the only open items in this audit. Whether `github.com/danjackdev/…`
 > resolves remains **UNVERIFIED**; it would still require a network call.
+>
+> **RESOLVED in `pyproject.toml`.** Line 12 now reads `authors = [{ name = "Daniel Jackson" }]`
+> and line 57 reads `Repository = "https://github.com/danjack0/translation-fidelity-atlas"`.
+> No open items remain from §9.
 
 ---
 
