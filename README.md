@@ -200,7 +200,7 @@ translation-fidelity-atlas/
 │   ├── methodology.md        # detailed methodology
 │   ├── findings.md           # extended results writeup
 │   └── nllb_setup.md         # how to run the local NLLB-200 backend
-├── figures/                  # 52 PNG outputs, 300 dpi
+├── figures/                  # 55 PNG outputs, 300 dpi
 └── VERIFIED_FACTS.md         # artifact-level audit of every claim above
 ```
 
